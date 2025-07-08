@@ -9,9 +9,11 @@ const dotenvExpand = require('dotenv-expand').expand
 
 function printHelp () {
   console.log([
-    'Usage: dotenv [--help] [--debug] [-e <path>] [-v <name>=<value>] [-p <variable name>] [-c [environment]] [--no-expand] [-- command]',
+    'Usage: dotenv [--help] [--debug] [--quiet] [--verbose] [-e <path>] [-v <name>=<value>] [-p <variable name>] [-c [environment]] [--no-expand] [-- command]',
     '  --help              print help',
     '  --debug             output the files that would be processed but don\'t actually parse them or run the `command`',
+    '  --quiet, -q         suppress debug output from dotenv (default)',
+    '  --verbose           enable debug output from dotenv',
     '  -e <path>           parses the file <path> as a `.env` file and adds the variables to the environment',
     '  -e <path>           multiple -e flags are allowed',
     '  -v <name>=<value>   put variable <name> into environment using value <value>',
@@ -30,6 +32,10 @@ if (argv.help) {
 }
 
 const override = argv.o || argv.override
+
+// Handle quiet/verbose flags - quiet is default, verbose enables dotenv debug output
+const isQuiet = argv.quiet || argv.q || !argv.verbose
+const enableDotenvDebug = !isQuiet
 
 if (argv.c && override) {
   console.error('Invalid arguments. Cascading env variables conflicts with overrides.')
@@ -81,14 +87,14 @@ if (argv.debug) {
 }
 
 paths.forEach(function (env) {
-  dotenv.config({ path: path.resolve(env), override })
+  dotenv.config({ path: path.resolve(env), override, debug: enableDotenvDebug })
 })
 
 // Expand when all path configs are loaded
 if (argv.expand !== false) {
   dotenvExpand({
     parsed: process.env
-  });
+  })
 }
 Object.assign(process.env, parsedVariables)
 
